@@ -13,7 +13,7 @@ build_deps:
   - zlib-dev
 
 bin_deps:
-  - jsoncpp 
+  - jsoncpp
   - libuuid
   - libressl
   - zlib
@@ -28,7 +28,7 @@ build:
   - cd /usr/src/app/build && make
 
 files:
-  - build/drogon_benchmark 
+  - build/drogon_benchmark
   - config.json
 
 command: /usr/bin/build/drogon_benchmark /usr/bin/config.json
