@@ -1,3 +1,8 @@
 framework:
   website: ruby-grape.org
   version: 1.4
+
+files:
+  - Gemfile
+  - config.ru
+  - ../.config/puma.rb
