@@ -1,13 +1,33 @@
 cloud:
   config:
-    output:
-      init:
-        output: "> /var/log/cloud-init.out"
-        error: "> /var/log/cloud-init.err"
-      config: "tee -a /var/log/cloud-config.log"
-      final:
-        - ">> /var/log/cloud-final.out"
-        - "/var/log/cloud-final.err"
+    package_update: true
+    runcmd:
+      - systemctl disable cloud-init
+      - systemctl enable web
+      - mkdir -p /opt/web
+      - find /opt/web -type f -exec chown -R cloudy:cloudy {} \;
+    users:
+      - name: cloudy
+        gecos: Magic Cloud App Daemon User
+        lock_passwd: true
+        ssh_redirect_user: true
+        no_create_home: true
+        no_log_init: true
+
+service: |
+  [Unit]
+  Description=web
+  After=network.target
+
+  [Service]
+  Type=simple
+  EnvironmentFile=/etc/web
+  WorkingDirectory=/opt/web
+  ExecStart={{{command}}}
+  User=cloudy
+
+  [Install]
+  WantedBy=multi-user.target
 
 providers:
   docker:
@@ -15,40 +35,45 @@ providers:
       - docker build -t {{{language}}}.{{{framework}}} .
 
     metadata:
-      - docker run -td {{{language}}}.{{{framework}}} | xargs -i docker inspect {} | jq -r '.[0].NetworkSettings.IPAddress' > ip.txt
+      - docker run -td {{{language}}}.{{{framework}}} > cid.txt
+      - docker inspect `cat cid.txt` | jq -r '.[0].NetworkSettings.IPAddress' > ip.txt
 
     clean:
-      - docker ps -a -q  --filter ancestor={{{language}}}.{{{framework}}}  | xargs -r docker rm -f
+      - docker ps -a -q  --filter ancestor={{{language}}}.{{{framework}}}  | xargs docker
+        rm -f
+
+  docker-machine:
+    build:
+      - docker build -t {{{language}}}.{{{framework}}} .
+
+    metadata:
+      - docker-machine inspect the-benchmarker > ip.txt
+
+    clean:
+      - docker ps -a -q  --filter ancestor={{{language}}}.{{{framework}}}  | xargs docker
+        rm -f
 
   digitalocean:
-    # Create cloud-init configuration
-    - rake cloud:config LANG={{{language}}} FRAMEWORK={{{framework}}}
+    build:
+      - rm -fr ~/.ssh/known_hosts
+      - rake cloud:config LANG={{{language}}} FRAMEWORK={{{framework}}}
+      - doctl compute droplet create {{{language}}}.{{{framework}}} --region {{{DO_REGION}}}
+        --image {{{DO_IMAGE}}} --size {{{DO_SIZE}}} --user-data-file user_data.yml --wait
+        --ssh-keys {{{DO_FINGERPRINT}}} {{{DO_OPTIONS}}}
 
-    # Create droplet
-    - doctl compute droplet create {{{language}}}.{{{framework}}} --region {{{DO_REGION}}} --image {{{DO_IMAGE}}} --size {{{DO_SIZE}}} --user-data-file user_data.yml --wait --ssh-keys {{{DO_FINGERPRINT}}} {{{DO_OPTIONS}}}
+    metadata:
+      - doctl compute droplet list {{{language}}}.{{{framework}}} --format ID --no-header
+        > id.txt
+      - doctl compute droplet list {{{language}}}.{{{framework}}} --format {{{DO_ATTRIBUTE}}}
+        --no-header > ip.txt
+      - rake cloud:wait LANG={{{language}}} FRAMEWORK={{{framework}}} HOST=`cat ip.txt`
+        SSH_KEY={{{DO_KEY}}}
+      - rake cloud:upload LANG={{{language}}} FRAMEWORK={{{framework}}} HOST=`cat ip.txt`
+        SSH_KEY={{{DO_KEY}}}
 
-    # Get droplet id
-    - doctl compute droplet list {{{language}}}.{{{framework}}} --format ID --no-header > id.txt
+    exec: doctl compute ssh {{{language}}}.{{{framework}}} --ssh-key-path {{{DO_KEY}}} --ssh-command "cd /opt/web && {{{command}}}"
 
-    # Store IP
-    - doctl compute droplet list {{{language}}}.{{{framework}}} --format {{{DO_ATTRIBUTE}}} --no-header > ip.txt
+    reboot: doctl compute droplet-action reboot `cat id.txt`
 
-    # Wait cloud-init to finish
-    - rake cloud:wait LANG={{{language}}} FRAMEWORK={{{framework}}} HOST=`cat ip.txt` SSH_KEY={{{DO_KEY}}}
-
-    # Upload files
-    - rake cloud:upload LANG={{{language}}} FRAMEWORK={{{framework}}} HOST=`cat ip.txt` SSH_KEY={{{DO_KEY}}}
-
-    # Reboot droplet
-    - doctl compute droplet-action reboot `cat id.txt`
-    - sleep 10
-
-    # Wait for reacheable host
-    # - rake wait LANG={{{language}}} FRAMEWORK={{{framework}}} HOST=`cat ip.txt`
-    - while true; do curl "http://`cat ip.txt`:3000" > /dev/null && break; done
-
-    # Collect results
-    - DATABASE_URL={{{DATABASE_URL}}} ../../bin/client --language {{{language}}} --framework {{{framework}}} {{{SIEGER_OPTIONS}}}
-
-    # Drop droplet
-    - doctl compute droplet delete {{{language}}}.{{{framework}}} --force
+    clean:
+      - doctl compute droplet delete {{{language}}}.{{{framework}}} --force
