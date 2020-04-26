@@ -8,7 +8,13 @@
 
 WORKDIR /usr/src/app
 
-COPY . ./
+{{#sources}}
+  COPY {{{.}}} {{{.}}}
+{{/sources}}
+
+{{#files}}
+  COPY {{.}} {{{.}}}
+{{/files}}
 
 {{#patch}}
   {{{.}}}
@@ -19,32 +25,28 @@ COPY . ./
 {{/build}}
 
 {{^build}}
-  RUN mvn clean package -q
+  RUN mvn package
 {{/build}}
 
 
 FROM openjdk:11-jre-slim
+git
 
-{{#fixes}}
+{{#binaries}}
+  COPY --from=0 /usr/src/app/{{{.}}} {{{.}}}
+{{/binaries}}
+
+{{#after_command}}
   RUN {{{.}}}
-{{/fixes}}
+{{/after_command}}
 
-WORKDIR /usr/src/app
+{{#deps}}
+  RUN apk add {{{.}}}
+{{/deps}}
 
-
-{{#files}}
-COPY --from=0 /usr/src/app/{{{.}}} {{{.}}}
-{{/files}}
-
-
-WORKDIR /usr/src/app
-{{#files}}
-COPY --from=0 /usr/src/app/{{{.}}} {{{.}}}
-{{/files}}
-
-{{#before_command}}
-  RUN {{{.}}}
-{{/before_command}}
+{{#environment}}
+  ENV {{{.}}}
+{{/environment}}
 
 {{#command}}
   CMD {{{.}}}
