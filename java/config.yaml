@@ -6,5 +6,3 @@ sources:
   - src/**/*.java
   - src/**/*.properties
   - pom.xml
-
-docker_pause: 5
