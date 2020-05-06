@@ -2,4 +2,6 @@ provider:
   default:
     language: 1.10
 
-docker_pause: 10
+sources:
+  - "**/*.clj"
+  - "**/*.edn"
