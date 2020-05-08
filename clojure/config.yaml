@@ -5,3 +5,4 @@ provider:
 sources:
   - "**/*.clj"
   - "**/*.edn"
+  - "**/*.xml"
