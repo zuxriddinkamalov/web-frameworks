@@ -6,7 +6,7 @@ sources:
   - "**/*.swift"
 
 binaries:
-  - .build/release/server 
+  - .build/release/server
 
 cloud:
   config:
@@ -38,4 +38,3 @@ service: |
 
   [Install]
   WantedBy=multi-user.target
-
