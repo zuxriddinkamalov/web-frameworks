@@ -2,8 +2,13 @@ provider:
   default:
     language: 1.4
 
-files:
+sources:
   - "**/*.kt"
   - "**/*.gradle"
   - "**/*.properties"
   - "**/*.conf"
+
+binaries:
+  - build/libs/server.jar
+
+command: /usr/bin/java -server -XX:+UseNUMA -XX:+UseParallelGC -XX:+AlwaysPreTouch -jar /opt/web/build/libs/server.jar
