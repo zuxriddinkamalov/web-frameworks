@@ -6,7 +6,7 @@ build:
   - mvn compile assembly:single -q
 
 binaries:
-  - target/benchmark-0.0.1-SNAPSHOT-jar-with-dependencies.jar
+  - target/server-1.0.0-jar-with-dependencies.jar
 
 command: >
   java -server

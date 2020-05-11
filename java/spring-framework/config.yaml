@@ -6,7 +6,8 @@ build:
   - mvn clean package
 
 binaries:
-  - target/benchmark-0.0.1-SNAPSHOT.war
+  - target/server-1.0.0.war
+  - target/server-1.0.0/WEB-INF/lib/jetty-runner-9.4.30.v20200611.jar
 
 command: >
   java 

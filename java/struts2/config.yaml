@@ -6,6 +6,6 @@ build:
   - mvn clean package
 
 files:
-  - target/struts2-1.0-standalone.jar
+  - target/server-1.0.0-standalone.jar
 
 command: java -XX:+UseNUMA -XX:+UseParallelGC -jar target/struts2-1.0-standalone.jar --port 3000

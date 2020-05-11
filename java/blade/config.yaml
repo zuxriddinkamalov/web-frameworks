@@ -6,6 +6,6 @@ build:
   - mvn compile assembly:single -q
 
 binaries:
-  - target/benchmark-0.0.1-jar-with-dependencies.jar
+  - target/server-1.0.0-jar-with-dependencies.jar
 
-command: java -jar target/benchmark-0.0.1-jar-with-dependencies.jar
+command: /usr/bin/java -jar /opt/web/target/server-1.0.0-jar-with-dependencies.jar

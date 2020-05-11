@@ -1,8 +1,20 @@
 provider:
   default:
     language: 11
+  digitalocean:
+    language: 11
 
 sources:
   - src/**/*.java
-  - src/**/*.properties
   - pom.xml
+
+files:
+  - src/**/*.properties
+  - src/**/*.xml
+  - src/**/*.jsp
+
+binaries:
+  - target/server-1.0.0.jar
+
+deps:
+  - java-11-openjdk

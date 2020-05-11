@@ -2,13 +2,17 @@ framework:
   website: actframework.org
   version: 1.9
 
-deps:
+alpine-deps:
   - bash
 
+build:
+  - mvn package
+  - mv target/dist/server-1.0.0-*.tar.gz target/dist/server-1.0.0.tar.gz
+
 binaries:
-  - target/dist/*.tar.gz
+  - target/dist/server-1.0.0.tar.gz
 
 bootstrap:
-  - tar -xvzf target/dist/*.tar.gz
+  - tar -xvzf target/dist/server-1.0.0.tar.gz
 
-command: bash run
+command: /opt/web/run
