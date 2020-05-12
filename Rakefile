@@ -70,9 +70,6 @@ def commands_for(language, framework, **options)
   config["providers"][options[:provider]]["metadata"].each do |cmd|
     commands << Mustache.render(cmd, options).to_s
   end
-  if ['docker','docker-machine'].include?(options[:provider]) && main_config.key?('docker_pause')
-  commands << "sleep #{main_config["docker_pause"]}"
-  end
 
   if app_config.key?("bootstrap") && config["providers"][options[:provider]].key?("exec")
     remote_command = config["providers"][options[:provider]]["exec"]
@@ -81,13 +78,12 @@ def commands_for(language, framework, **options)
     end
   end
 
-  if ["docker", "docker-machine"].include?(options[:provider])
-    pause = main_config.fetch("docker_pause") { "5" }
-    commands << "sleep #{pause}"
-  else
+  if config["providers"][options[:provider]].key?("reboot")
     commands << config["providers"][options[:provider]].fetch("reboot")
-    commands << 'while true; do curl "http://`cat ip.txt`:3000" > /dev/null && break; done'
+    commands << "sleep 30"
   end
+
+  commands << "curl --retry 5 --retry-delay 5 --retry-max-time 180 --retry-connrefused http://`cat ip.txt`:3000 -v"
 
   commands << "DATABASE_URL=#{ENV["DATABASE_URL"]} ../../bin/client --language #{language} --framework #{framework} #{options[:sieger_options]} -h `cat ip.txt`" unless options[:collect] == "off"
 
@@ -139,7 +135,7 @@ def create_dockerfile(language, framework, **options)
   end
 
   template = nil
-  if (options[:provider].start_with?("docker") || options[:provider].start_with?("podman"))
+  if options[:provider].start_with?("docker") || options[:provider].start_with?("podman")
     template = File.join(directory, "..", "Dockerfile")
   elsif config.key?("binaries")
     template = File.join(directory, "..", ".build", options[:provider], "Dockerfile")
@@ -190,7 +186,6 @@ namespace :cloud do
   task :config do
     language = ENV.fetch("LANG")
     framework = ENV.fetch("FRAMEWORK")
-    provider = ENV.fetch("PROVIDER") { "docker" }
 
     directory = File.join(Dir.pwd, language, framework)
     main_config = YAML.safe_load(File.open(File.join(Dir.pwd, "config.yaml")))
@@ -300,8 +295,6 @@ namespace :cloud do
           binaries << binary
         end
       end
-    end
-  end
 
       Net::SSH.start(ENV["HOST"], "root", keys: [ENV["SSH_KEY"]]) do |ssh|
         binaries.each do |binary|
@@ -366,20 +359,18 @@ namespace :ci do
           "cache store bin bin",
           "bundle config path .cache",
           "bundle install",
-          "bundle exec rake config",
           "cache store built-in .cache",
+          "bundle exec rake config",
         ],
       }],
     } }]
-    done = []
     Dir.glob("*/config.yaml").each do |path|
       language, = path.split(File::Separator)
       block = { name: language, dependencies: ["setup"], run: { when: "change_in('/#{language}/')" }, task: { prologue: { commands: [
         "cache restore $SEMAPHORE_GIT_SHA",
-        "bundle install",
         "cache restore bin",
-        "find bin -type f -exec chmod +x {} \\;",
         "cache restore built-in",
+        "find bin -type f -exec chmod +x {} \\;",
         "bundle config path .cache",
         "bundle exec rake config",
       ] }, 'env_vars': [
@@ -387,7 +378,6 @@ namespace :ci do
         { name: "COLLECT", 'value': "off" },
       ], jobs: [] } }
       Dir.glob("#{language}/*/config.yaml") do |file|
-        config = YAML.safe_load(File.read(file))
         _, framework, = file.split(File::Separator)
         block[:task][:jobs] << { name: framework, commands: [
           "mkdir -p .neph/#{language}/#{framework}",
@@ -399,7 +389,7 @@ namespace :ci do
     end
 
     config = { version: "v1.0", name: "Benchmarking suite", execution_time_limit: { hours: 2 }, agent: { machine: { type: "e1-standard-2", os_image: "ubuntu1804" } }, blocks: blocks }
-    File.write(".semaphore/semaphore.yml", JSON.load(config.to_json).to_yaml)
+    File.write(".semaphore/semaphore.yml", JSON.parse(config.to_json).to_yaml)
   end
 end
 
@@ -408,12 +398,14 @@ task :clean do
     directory = File.dirname(ignore_file)
     next if directory.start_with?("lib")
     next if directory.start_with?("bin")
+
     File.foreach(ignore_file) do |line|
       line.strip!
       next if line.start_with?("!")
       next if line.start_with?("#")
       next if line.start_with?(".env")
       next if line.empty?
+
       Dir.glob(File.join(directory, line)).each do |file|
         if File.exist?(file)
           if File.file?(file)
@@ -426,40 +418,5 @@ task :clean do
         end
       end
     end
-
-    while true
-      output = ssh.exec!("cloud-init status")
-      _, status = output.split(":")
-
-      raise RuntimeError, "Cloud-init have failed" if status.strip == "error"
-
-      break if status.strip == "done"
-
-      STDOUT.puts "Cloud-init is still running"
-      sleep 5
-    end
-
-    ssh.close
-  end
-end
-
-namespace :ci do
-  task :config do
-      frameworks = []
-      Dir.glob("*/*/config.yaml").each do |file|
-        directory = File.dirname(file)
-        infos = directory.split("/")
-        framework = infos.pop
-        language = infos.pop
-        frameworks << "#{language}.#{framework}"
-      end
-      config = File.read(".ci/template.mustache")
-      File.write(".travis.yml", Mustache.render(config, {"frameworks" => frameworks}))
-  end
-end
-
-task :clean do
-  Dir.glob("**/*").each do |path|
-    File.delete(path) if File.open(path) { |f| f.gets(4) == "\x7FELF" }
   end
 end
