@@ -1,3 +1,8 @@
 provider:
   default:
     language: 1.46
+
+binaries:
+  - server
+
+command: /opt/web/server
