@@ -48,6 +48,4 @@ git
   ENV {{{.}}}
 {{/environment}}
 
-{{#command}}
-  CMD {{{.}}}
-{{/command}}
+CMD {{#command}}{{{.}}}{{/command}}

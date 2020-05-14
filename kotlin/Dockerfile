@@ -10,13 +10,7 @@ USER gradle
   COPY {{{.}}} {{{.}}}
 {{/sources}}
 
-{{#build}}
-  RUN {{{.}}}
-{{/build}}
-
-{{^build}}
-  RUN gradle build
-{{/build}}
+RUN gradle build
 
 FROM openjdk:11-jre-slim
 
@@ -28,5 +22,5 @@ WORKDIR /opt/web
 
 RUN ln -sfv /usr/local/openjdk-11/bin/java /usr/bin/java
 
-CMD {{command}}
+CMD {{#command}}{{{.}}}{{/command}}
 
