@@ -32,9 +32,8 @@ WORKDIR /usr/src/web
 FROM openjdk:11-jre-slim
 git
 
-{{#binaries}}
-  COPY --from=0 /usr/src/web/{{{.}}} {{{.}}}
-{{/binaries}}
+COPY --from=0 /usr/src/web/target target
+COPY --from=0 /usr/src/web/build build
 
 {{#bootstrap}}
   RUN {{{.}}}
