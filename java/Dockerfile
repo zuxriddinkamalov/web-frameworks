@@ -28,9 +28,6 @@ WORKDIR /usr/src/web
   RUN mvn package
 {{/build}}
 
-RUN mkdir -p target
-RUN mkdir -p build
-
 FROM openjdk:11-jre-slim
 git
 
