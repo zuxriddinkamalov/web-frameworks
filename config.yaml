@@ -47,7 +47,7 @@ providers:
       - docker build -t {{{language}}}.{{{framework}}} .
 
     metadata:
-      - docker-machine inspect the-benchmarker > ip.txt
+      - docker-machine ip default > ip.txt
 
     clean:
       - docker ps -a -q  --filter ancestor={{{language}}}.{{{framework}}}  | xargs docker
