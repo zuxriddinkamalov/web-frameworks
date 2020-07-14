@@ -51,4 +51,4 @@ RUN ln -sfv /usr/local/openjdk-11/bin/java /usr/bin/java
   ENV {{{.}}}
 {{/environment}}
 
-CMD {{#command}}{{{.}}}{{/command}}
+CMD {{{command}}}
