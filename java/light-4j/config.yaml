@@ -4,11 +4,3 @@ framework:
 
 build:
   - mvn clean package -Prelease
-
-files:
-  - target/benchmark-0.0.1.jar
-
-command: >
-  java
-  -XX:+UseNUMA -XX:+UseParallelGC -XX:+AggressiveOpts
-  -jar target/benchmark-0.0.1.jar
