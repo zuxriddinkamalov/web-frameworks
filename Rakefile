@@ -48,9 +48,9 @@ def commands_for(language, framework, **options)
 
   commands = []
 
-  # Compile first
+  # Compile first, only for non containers
 
-  if app_config.key?("binaries")
+  if app_config.key?("binaries") && !(options[:provider].start_with?("docker") || options[:provider].start_with?("podman"))
     commands << "docker build -t #{language}.#{framework} ."
     commands << "docker run -td #{language}.#{framework} > cid.txt"
     app_config["binaries"].each do |out|
