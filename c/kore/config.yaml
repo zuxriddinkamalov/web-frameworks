@@ -30,7 +30,7 @@ bin_deps:
   - libressl
 
 binaries:
-  - ../../local/bin/kore
-  - hello/hello.so
+  - kore
+  - hello.so
 
-command: /local/bin/kore -f -n -r -c /opt/web/conf/hello.conf
+command: /opt/web/kore -f -n -r -c /opt/web/hello/conf/hello.conf
