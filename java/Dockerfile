@@ -42,10 +42,6 @@ RUN ln -sfv /usr/local/openjdk-11/bin/java /usr/bin/java
   RUN {{{.}}}
 {{/bootstrap}}
 
-{{#alpine-deps}}
-  RUN apk add {{{.}}}
-{{/alpine-deps}}
-
 {{#environment}}
   ENV {{{.}}}
 {{/environment}}

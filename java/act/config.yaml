@@ -2,9 +2,6 @@ framework:
   website: actframework.org
   version: 1.9
 
-alpine-deps:
-  - bash
-
 build:
   - mvn package
   - mv target/dist/server-1.0.0-*.tar.gz target/dist/server-1.0.0.tar.gz
